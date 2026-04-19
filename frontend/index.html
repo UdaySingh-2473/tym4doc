@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <title>Tym4DOC | Healthcare Booking System</title>
+    <meta name="description" content="Tym4DOC - Modern Healthcare Booking System for Clinics and Patients" />
+    <meta name="author" content="Tym4DOC" />
+    <meta name="copyright" content="Tym4DOC" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: system-ui, -apple-system, Arial, sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+
+      :root {
+        --c-blue: #0d9488; /* Modern Teal */
+        --c-blue-dk: #0f766e; /* Darker Teal */
+        --c-blue-lt: #f0fdfa; /* Extremely light Teal */
+        --c-green: #10b981; 
+        --c-red: #ef4444;
+        --c-amber: #f59e0b;
+        --c-gray-50: #f8fafc;
+        --c-gray-100: #f1f5f9;
+        --c-gray-200: #e2e8f0;
+        --c-gray-300: #cbd5e1;
+        --c-gray-400: #94a3b8;
+        --c-gray-500: #64748b;
+        --c-gray-700: #334155;
+        --c-gray-900: #0f172a;
+        --c-white: #ffffff;
+      }
+
+      [data-theme='dark'] {
+        --c-blue: #14b8a6;
+        --c-blue-dk: #0d9488;
+        --c-blue-lt: #042f2e;
+        --c-green: #34d399;
+        --c-red: #f87171;
+        --c-amber: #fbbf24;
+        --c-gray-50: #020617;
+        --c-gray-100: #0f172a;
+        --c-gray-200: #334155;
+        --c-gray-300: #475569;
+        --c-gray-400: #64748b;
+        --c-gray-500: #94a3b8;
+        --c-gray-700: #cbd5e1;
+        --c-gray-900: #f8fafc;
+        --c-white: #0f172a;
+      }
+
+      [data-theme='dark'] #appt-search {
+        border-color: rgba(255,255,255,0.7) !important;
+        background-color: rgba(15,23,42,0.8) !important;
+      }
+
+      [data-theme='dark'] .search-box-wrap {
+        border-color: rgba(255,255,255,0.2) !important;
+      }
+
+      /* ── Responsive grid helpers ── */
+      .g2  { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+      .g3  { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+      .dash-wrap { display:grid; grid-template-columns:190px 1fr; gap:14px; padding:18px 16px; width:100%; box-sizing:border-box; }
+      .slot-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+      .nav-links { display:flex; gap:14px; align-items:center; }
+      .sidebar { display:block; }
+
+      @media (max-width: 768px) {
+        .g2  { grid-template-columns:1fr !important; }
+        .g3  { grid-template-columns:1fr 1fr !important; }
+        .dash-wrap { grid-template-columns:1fr !important; padding:12px 10px !important; }
+        .slot-grid { grid-template-columns:repeat(3,1fr) !important; }
+        .sidebar { display:flex; flex-direction:row; flex-wrap:wrap; overflow-x:auto; }
+        .hide-mobile { display:none !important; }
+        .nav-links { gap:8px; }
+      }
+
+      @media (max-width: 480px) {
+        .g3  { grid-template-columns:1fr !important; }
+        .slot-grid { grid-template-columns:repeat(2,1fr) !important; }
+        .nav-links { gap:4px; }
+      }
+
+      /* Smooth table on mobile */
+      .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      table { min-width:580px; }
+
+      /* Auth cards full-width on mobile */
+      @media (max-width: 520px) {
+        .auth-card { padding:16px !important; margin:0 8px; }
+      }
+
+      /* ── Animations ── */
+      @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(18px); }
+        to   { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: .6; }
+      }
+      @keyframes shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position: 200% 0; }
+      }
+
+      /* ── Global Theme Overrides for Form Elements ── */
+      input, select, textarea {
+        background-color: var(--c-white) !important;
+        color: var(--c-gray-900) !important;
+        border: 1.5px solid var(--c-gray-200) !important;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+      input::placeholder {
+        color: var(--c-gray-400) !important;
+        opacity: 0.8;
+      }
+      select option {
+        background-color: var(--c-white) !important;
+        color: var(--c-gray-900) !important;
+      }
+
+      /* Fix for Chrome/Edge autofill white background */
+      input:-webkit-autofill,
+      input:-webkit-autofill:hover, 
+      input:-webkit-autofill:focus, 
+      input:-webkit-autofill:active {
+        -webkit-box-shadow: 0 0 0 30px var(--c-white) inset !important;
+        -webkit-text-fill-color: var(--c-gray-900) !important;
+        transition: background-color 5000s ease-in-out 0s;
+      }
+
+      /* Smooth scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: var(--c-gray-100); }
+      ::-webkit-scrollbar-thumb { background: var(--c-gray-300); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--c-gray-400); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script type="module" src="/main.jsx"></script>
+  </body>
+</html>
