@@ -1,134 +1,50 @@
-# 🏥 Tym4DOC — Full Stack Tym4DOC Booking
+# TYM4DOC
 
-React frontend + Node.js/Express backend + MongoDB + Razorpay payments.
+This is a full-stack booking system I built to simplify how patients, doctors, and clinics interact. The goal was to create something that feels premium and "just works," whether you're a patient looking for a quick appointment or an admin managing a whole clinic.
 
----
+## Why this project?
 
-## Project Structure
+Healthcare scheduling is often clunky. I wanted to build a platform that handles the entire flow—from finding a doctor and verifying your email to secure payments—without the user feeling overwhelmed. 
 
-```
-Tym4DOC-react/          ← React frontend (Vite)
-  src/
-    pages/               ← Landing, PatientAuth, DoctorAuth, PatientDash, DoctorDash, AdminDash, AddDoctor
-    components/shared/   ← Navbar, AdminModal, PaymentModal, UI primitives
-    services/api.js      ← All fetch calls to backend
-    constants/           ← colors, styles, data
+### What's inside:
 
-backend/                 ← Express API
-  models/                ← Patient.js, Doctor.js, Appointment.js (Mongoose)
-  routes/                ← authRoutes, doctorRoutes, appointmentRoutes, paymentRoutes
-  middleware/auth.js     ← JWT protect + authorize
-  config/db.js           ← MongoDB connection
-  server.js              ← Entry point
-```
+*   **Dashboards that make sense**: Whether you're logged in as a patient, doctor, or clinic, the UI is tailored to exactly what you need to see. No clutter.
+*   **Themed for comfort**: Full support for Dark and Light modes. It automatically persists your preference so it's ready when you come back.
+*   **Responsive from the ground up**: I spent a lot of time making sure it looks great on everything. It's fully optimized even for tiny mobile screens (230px range).
+*   **Secure and Reliable**: JWT-based auth, password resets via email, and integrated Razorpay for handling payments securely.
+*   **Support when you need it**: A built-in support system so users can get help without leaving the app.
 
----
+## The Tech Behind It
 
-## Setup
+I used the MERN stack (MongoDB, Express, React, Node) because of how well they play together for real-time apps. 
+- **Frontend**: React with Vite for speed. I kept the styling in Vanilla CSS to have absolute control over the look and feel.
+- **Backend**: Node/Express managing the API and Socket.io for real-time notifications.
+- **Payments**: Razorpay handles the heavy lifting for transactions.
+- **Storage**: Profile images and assets are managed via Cloudinary.
 
-### 1. MongoDB (free)
-1. Go to https://cloud.mongodb.com
-2. Create a free cluster
-3. Click **Connect → Drivers** and copy the connection string
-4. Replace `<username>` and `<password>` in the string
+## Getting it running locally
 
-### 2. Razorpay (test keys)
-1. Sign up at https://dashboard.razorpay.com
-2. Go to **Settings → API Keys**
-3. Generate **Test Mode** keys
-4. Copy `Key ID` and `Key Secret`
+If you want to poke around the code or run it yourself, here's the quick version:
 
-### 3. Backend
+###  Backend
+1. Go into the `backend` folder and run `npm install`.
+2. Create a `.env` file (you can use `.env.example` as a starting point).
+3. You'll need credentials for MongoDB, Razorpay, Cloudinary, and an email account for SMTP (Nodemailer).
+4. Run `npm run dev` to start the server on port 5000.
 
-```bash
-cd backend
-cp .env.example .env
-# Fill in MONGO_URI, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, JWT_SECRET
-npm install
-npm run dev       # starts on http://localhost:5000
-```
+###  Frontend
+1. Go into the `frontend` folder and run `npm install`.
+2. Make sure your `.env` points to the backend API (`http://localhost:5000/api`).
+3. Run `npm run dev` and open `http://localhost:5173`.
 
-### 4. Frontend
+## A quick look at the API
 
-```bash
-cd ..             # back to Tym4DOC-react/
-cp .env.example .env
-# VITE_API_URL=http://localhost:5000/api  (already set)
-npm install
-npm run dev       # starts on http://localhost:5173
-```
+The backend is structured logically:
+- `/api/auth`: Handles all the login, registration, and email verification logic.
+- `/api/appointments`: The core of the app—booking, cancelling, and fetching schedules.
+- `/api/support`: Where the help requests are processed.
+
+
 
 ---
-
-## API Endpoints
-
-### Auth
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/auth/patient/register` | Register patient |
-| POST | `/api/auth/patient/login` | Patient login |
-| POST | `/api/auth/doctor/register` | Register doctor |
-| POST | `/api/auth/doctor/login` | Doctor login |
-| POST | `/api/auth/admin/login` | Admin login |
-
-### Doctors
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| GET | `/api/doctors` | Public | All approved doctors |
-| GET | `/api/doctors/pending` | Admin | Pending applications |
-| GET | `/api/doctors/all` | Admin | All doctors |
-| PATCH | `/api/doctors/:id/approve` | Admin | Approve doctor |
-| PATCH | `/api/doctors/:id/reject` | Admin | Reject doctor |
-| PATCH | `/api/doctors/:id/toggle` | Admin | Toggle availability |
-| DELETE | `/api/doctors/:id` | Admin | Remove doctor |
-| POST | `/api/doctors/admin-add` | Admin | Manually add doctor |
-
-### Appointments
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/appointments` | Patient | Book appointment |
-| GET | `/api/appointments/mine` | Patient | My appointments |
-| GET | `/api/appointments/doctor` | Doctor | Doctor's appointments |
-| GET | `/api/appointments/all` | Admin | All appointments |
-| PATCH | `/api/appointments/:id/cancel` | Patient/Doctor | Cancel appointment |
-
-### Payments (Razorpay)
-| Method | Route | Auth | Description |
-|--------|-------|------|-------------|
-| POST | `/api/payment/create-order` | Patient | Create Razorpay order |
-| POST | `/api/payment/verify` | Patient | Verify payment signature |
-| GET | `/api/payment/key` | Any | Get Razorpay key_id |
-
----
-
-## Payment Flow
-
-```
-Patient fills form
-       ↓
-Click "Proceed to Payment"
-       ↓
-Backend: POST /api/payment/create-order  →  Razorpay order_id
-       ↓
-Razorpay Checkout opens (UPI / Card / Net Banking)
-       ↓
-User pays
-       ↓
-Backend: POST /api/payment/verify  (HMAC-SHA256 signature check)
-       ↓
-Backend: POST /api/appointments  (appointment saved with payment info)
-       ↓
-Toast: "Appointment confirmed!"
-```
-
----
-
-## Demo Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| Doctor | rahul@medi.com | doctor123 |
-| Admin | admin@Tym4DOC.com | admin123 |
-| Patient | register first | — |
-
-> **Note:** When the backend is not running, the app falls back to in-memory state (no data persistence, no real payments).
+*Built with care by the TYM4DOC Team.*

@@ -1,6 +1,7 @@
 {
-  "name": "Tym4DOC-react",
+  "name": "tym4doc-frontend",
   "version": "1.0.0",
+  "description": "Official frontend application for the Tym4DOC platform, built with React and Vite.",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

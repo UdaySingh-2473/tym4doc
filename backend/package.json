@@ -1,7 +1,7 @@
 {
-  "name": "Tym4DOC-api",
+  "name": "tym4doc-backend",
   "version": "1.0.0",
-  "description": "Tym4DOC backend API with MongoDB, Socket.io, and Razorpay",
+  "description": "Official backend API service for the Tym4DOC platform, powered by Node.js, MongoDB, and Socket.io.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

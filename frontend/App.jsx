@@ -40,9 +40,9 @@ function AuthBridge({ showToast, children }) {
 function AppRoutes() {
   const {
     session,
-    adminModalOpen, setAdmMod,
-    goHome, logout,
-    handlePatAuth, handleClinicAuth, handleAdminSuccess,
+    adminModalOpen, setAdminModalOpen,
+    navigateToHome, logout,
+    handlePatientAuthentication, handleClinicAuthentication, handleAdminSuccess,
   } = useAuth();
 
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
@@ -61,7 +61,7 @@ function AppRoutes() {
 
   return (
     <>
-      {(!!session.role || location.pathname === "/patient/dashboard") && <Navbar session={session} onHome={goHome} onLogout={logout} theme={theme} />}
+      {(!!session.role || location.pathname === "/patient/dashboard") && <Navbar session={session} onHome={navigateToHome} onLogout={logout} theme={theme} />}
       
       <button 
         onClick={toggleTheme} 
@@ -100,7 +100,7 @@ function AppRoutes() {
 
       <AdminModal
         open={adminModalOpen}
-        onClose={() => setAdmMod(false)}
+        onClose={() => setAdminModalOpen(false)}
         onSuccess={handleAdminSuccess}
       />
 
@@ -111,17 +111,17 @@ function AppRoutes() {
               !session.isEmailVerified && session.role !== "admin" ? <Navigate to="/verify-notice" /> :
               <Navigate to={session.role === "patient" ? "/patient/dashboard" : session.role === "doctor" ? "/doctor/dashboard" : session.role === "clinic" ? "/clinic/dashboard" : "/admin/dashboard"} />
             ) :
-            <Landing onRole={(r) => r === "patient" ? navigate("/patient/dashboard") : navigate("/clinic/auth")} onAdminClick={() => setAdmMod(true)} />
+            <Landing onRole={(r) => r === "patient" ? navigate("/patient/dashboard") : navigate("/clinic/auth")} onAdminClick={() => setAdminModalOpen(true)} />
           } />
 
           <Route path="/patient/auth" element={
             session.role ? <Navigate to="/" /> :
-            <PatientAuth onBack={() => navigate("/patient/dashboard")} onLogin={handlePatAuth} />
+            <PatientAuth onBack={() => navigate("/patient/dashboard")} onLogin={handlePatientAuthentication} />
           } />
 
           <Route path="/clinic/auth" element={
             session.role ? <Navigate to="/" /> :
-            <ClinicAuth onBack={() => navigate("/")} onLogin={handleClinicAuth} />
+            <ClinicAuth onBack={() => navigate("/")} onLogin={handleClinicAuthentication} />
           } />
 
           <Route path="/patient/dashboard" element={

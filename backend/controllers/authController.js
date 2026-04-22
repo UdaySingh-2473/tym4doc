@@ -11,7 +11,7 @@ const { generateRandomHexToken } = require("../utils/tokenGenerator");
 // Patient: Register
 exports.patientRegister = async (req, res) => {
   try {
-    const { firstName, lastName, email, phone, password } = req.body;
+    const { firstName, lastName, email, password } = req.body;
     if (!firstName || !lastName || !email || !password)
       return res.status(400).json({ error: "Please fill all required fields" });
     if (password.length < 8)
@@ -20,7 +20,7 @@ exports.patientRegister = async (req, res) => {
     if (await Patient.findOne({ email: email.toLowerCase() }))
       return res.status(400).json({ error: "Email already registered. Please sign in." });
 
-    const patient = await Patient.create({ firstName, lastName, email, phone, password });
+    const patient = await Patient.create({ firstName, lastName, email, password });
     
     // Issue verification token with throttle protection
     await exports.issueVerificationToken(email, "patient", `${firstName} ${lastName}`);

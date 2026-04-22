@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { ADMIN_EMAIL, ADMIN_PASS } from "../../constants/data";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "mov30444@gmail.com";
+const ADMIN_PASS  = import.meta.env.VITE_ADMIN_PASS  || "admin1234";
 import s from "../../constants/styles";
 import C from "../../constants/colors";
 import { Btn, Inp } from "./UI";

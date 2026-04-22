@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { useAppointment } from "../context/AppointmentContext";
 import C from "../constants/colors";
 import s from "../constants/styles";
-import { Btn, Bdg } from "../components/shared/UI";
+import { Btn, Bdg, Inp } from "../components/shared/UI";
 import CalendarPicker from "../components/shared/CalendarPicker";
 import useResponsive from "../hooks/useResponsive";
 import { loadAppts } from "../utils/appointmentHelpers";
@@ -439,18 +439,9 @@ export default function DoctorDash({ theme }) {
             <AnimCard>
               <SectionHead title="Security" sub="Change your dashboard password" />
               <form onSubmit={handleChangePassword}>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={s.lbl}>Current Password</label>
-                  <input type="password" style={s.inp} value={chCurrent} onChange={e => setChCurrent(e.target.value)} required />
-                </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={s.lbl}>New Password</label>
-                  <input type="password" style={s.inp} value={chNew} onChange={e => setChNew(e.target.value)} required />
-                </div>
-                <div style={{ marginBottom: 24 }}>
-                  <label style={s.lbl}>Confirm New Password</label>
-                  <input type="password" style={s.inp} value={chConfirm} onChange={e => setChConfirm(e.target.value)} required />
-                </div>
+                <Inp label="Current Password" type="password" value={chCurrent} onChange={e => setChCurrent(e.target.value)} required />
+                <Inp label="New Password" type="password" value={chNew} onChange={e => setChNew(e.target.value)} required />
+                <Inp label="Confirm New Password" type="password" value={chConfirm} onChange={e => setChConfirm(e.target.value)} required />
                 <Btn type="submit" full disabled={chLoading}>{chLoading ? "Updating..." : "Update Password"}</Btn>
               </form>
             </AnimCard>

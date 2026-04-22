@@ -11,7 +11,6 @@ import {
   getAdminPatients, getAdminClinicStats, getAdminPatientHistory, getAdminDoctorHistory,
   getAllDoctorsAdmin
 } from "../services/api";
-import { SPECIALTIES } from "../constants/data";
 import { getSocket, joinRoom, leaveRoom } from "../services/socket";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { formatSlotRange } from "../utils/timeUtils";

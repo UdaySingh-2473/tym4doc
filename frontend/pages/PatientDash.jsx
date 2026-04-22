@@ -9,7 +9,6 @@ import { searchClinics, getSearchSuggestions, getClinicDetails, getDoctorsByClin
 import { Inp, Btn, Bdg, TabBtns } from "../components/shared/UI";
 import PaymentModal from "../components/shared/PaymentModal";
 import SupportModal, { SupportFAB } from "../components/shared/SupportModal";
-import { SLOT_CATEGORIES } from "../constants/data";
 import { getSocket, joinRoom, leaveRoom } from "../services/socket";
 import CalendarPicker from "../components/shared/CalendarPicker";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -1757,18 +1756,13 @@ export default function PatientDash({ isGuest }) {
                 <h3 style={{ fontSize: "1rem", fontWeight: 800, color: C.gray900, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
                   Change Password
                 </h3>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={s.lbl}>Current Password</label>
-                  <input type="password" style={s.inp} value={cpCurrent} onChange={e => setCpCurrent(e.target.value)} placeholder="Your current password" />
-                </div>
+                  <Inp label="Current Password" type="password" value={cpCurrent} onChange={e => setCpCurrent(e.target.value)} placeholder="Your current password" />
                 <div style={{ display: "grid", gridTemplateColumns: R.isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 20 }}>
                   <div>
-                    <label style={s.lbl}>New Password</label>
-                    <input type="password" style={s.inp} value={cpNew} onChange={e => setCpNew(e.target.value)} placeholder="Min. 8 characters" />
+                    <Inp label="New Password" type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} placeholder="Min. 8 characters" />
                   </div>
                   <div>
-                    <label style={s.lbl}>Confirm New Password</label>
-                    <input type="password" style={s.inp} value={cpConfirm} onChange={e => setCpConfirm(e.target.value)} placeholder="Repeat new password" />
+                    <Inp label="Confirm New Password" type="password" value={cpConfirm} onChange={e => setCpConfirm(e.target.value)} placeholder="Repeat new password" />
                   </div>
                 </div>
                 <Btn type="submit" full color="amber" disabled={cpLoading}>

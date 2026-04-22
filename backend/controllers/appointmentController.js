@@ -8,6 +8,14 @@ const { formatSlotRange } = require("../utils/timeUtils");
 const getLocalDayStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
+/**
+ * Create a new appointment.
+ * Includes conflict checking, automated Razorpay refunds for double bookings,
+ * and real-time notifications via Socket.io.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 exports.create = async (req, res) => {
   try {
     const { doctorId, date, time, reason, patientName, patientPhone, patientAge, patientAddress, patientGender, paymentOrderId, paymentId, paymentSignature, amount } = req.body;
@@ -22,8 +30,8 @@ exports.create = async (req, res) => {
       return res.status(400).json({ error: "Clinic is not approved" });
 
     const maxDays = doctor.clinicId.maxBookingDays || 7;
-    const maxD = new Date(); maxD.setDate(maxD.getDate() + maxDays);
-    if (date > getLocalDayStr(maxD)) return res.status(400).json({ error: `Bookings only allowed within the next ${maxDays} days` });
+    const maxBookingDate = new Date(); maxBookingDate.setDate(maxBookingDate.getDate() + maxDays);
+    if (date > getLocalDayStr(maxBookingDate)) return res.status(400).json({ error: `Bookings only allowed within the next ${maxDays} days` });
 
     const conflict = await Appointment.findOne({ doctorId, date, time, status: { $in: ["pending","approved"] } });
     if (conflict) {
@@ -89,10 +97,12 @@ exports.create = async (req, res) => {
         date: appt.date,
         time: appt.timeSlot || appt.time
       };
-      if (appt.status === "approved") {
-        await emailService.sendApprovalNotice(appt.patientEmail, emailParams);
-      } else {
-        await emailService.sendBookingConfirm(appt.patientEmail, emailParams);
+      await emailService.sendBookingConfirm(appt.patientEmail, emailParams);
+      if (doctor.clinicId?.email) {
+        await emailService.sendClinicBookingNotice(doctor.clinicId.email, {
+          clinicName: doctor.clinicId.name,
+          ...emailParams
+        });
       }
     } catch (emailErr) {
       console.error("Failed to send booking email:", emailErr.message);
@@ -100,6 +110,13 @@ exports.create = async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
+/**
+ * Get all booked time slots for a specific doctor on a given date.
+ * Useful for frontend calendar availability rendering.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 exports.getSlots = async (req, res) => {
   try {
     const { doctorId, date } = req.query;
@@ -178,6 +195,7 @@ exports.reject = async (req, res) => {
     }
 
     try {
+      const clinic = await Clinic.findById(appt.clinicId);
       await emailService.sendCancellationNotice(appt.patientEmail, {
         patientName: appt.patientName,
         doctorName: appt.doctorName,
@@ -186,6 +204,16 @@ exports.reject = async (req, res) => {
         rescheduleSuggest: appt.rescheduleSuggest,
         refundInitiated: appt.payment?.status === "paid"
       });
+      if (clinic?.email) {
+        await emailService.sendClinicCancellationNotice(clinic.email, {
+          clinicName: clinic.name,
+          patientName: appt.patientName,
+          doctorName: appt.doctorName,
+          date: appt.date,
+          time: appt.timeSlot || appt.time,
+          cancelledBy: req.role
+        });
+      }
     } catch (emailErr) {
       console.error("Failed to send rejection email:", emailErr.message);
     }
@@ -216,6 +244,7 @@ exports.cancel = async (req, res) => {
 
 
     try {
+      const clinic = await Clinic.findById(appt.clinicId);
       await emailService.sendCancellationNotice(appt.patientEmail, {
         patientName: appt.patientName,
         doctorName: appt.doctorName,
@@ -224,6 +253,16 @@ exports.cancel = async (req, res) => {
         rescheduleSuggest: appt.rescheduleSuggest,
         refundInitiated: appt.payment?.status === "paid"
       });
+      if (clinic?.email) {
+        await emailService.sendClinicCancellationNotice(clinic.email, {
+          clinicName: clinic.name,
+          patientName: appt.patientName,
+          doctorName: appt.doctorName,
+          date: appt.date,
+          time: appt.timeSlot || appt.time,
+          cancelledBy: req.role
+        });
+      }
     } catch (emailErr) {
       console.error("Failed to send cancellation email:", emailErr.message);
     }
@@ -297,6 +336,14 @@ exports.getAdminDoctorHistory = async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 };
 
+/**
+ * Reschedule an existing appointment.
+ * Validates the new slot, handles potential conflicts with automated refunds,
+ * and logs the change in rescheduleHistory.
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 exports.reschedule = async (req, res) => {
   try {
     const { id } = req.params;
@@ -319,8 +366,8 @@ exports.reschedule = async (req, res) => {
     if (newDate < getLocalDayStr()) return res.status(400).json({ error: "Cannot reschedule to a past date" });
 
     const maxDays = appt.clinicId.maxBookingDays || 7;
-    const maxD = new Date(); maxD.setDate(maxD.getDate() + maxDays);
-    if (newDate > getLocalDayStr(maxD)) return res.status(400).json({ error: `Rescheduling only allowed within the next ${maxDays} days` });
+    const maxBookingDate = new Date(); maxBookingDate.setDate(maxBookingDate.getDate() + maxDays);
+    if (newDate > getLocalDayStr(maxBookingDate)) return res.status(400).json({ error: `Rescheduling only allowed within the next ${maxDays} days` });
 
     const conflict = await Appointment.findOne({ 
       doctorId: appt.doctorId, 
@@ -389,6 +436,17 @@ exports.reschedule = async (req, res) => {
         newDate,
         newTime: appt.timeSlot
       });
+      if (appt.clinicId?.email) {
+        await emailService.sendClinicRescheduleNotice(appt.clinicId.email, {
+          clinicName: appt.clinicId.name,
+          patientName: appt.patientName,
+          doctorName: appt.doctorName,
+          oldDate,
+          oldTime: oldTimeFormatted,
+          newDate,
+          newTime: appt.timeSlot
+        });
+      }
     } catch (emailErr) {
       console.error("Failed to send reschedule email:", emailErr.message);
     }

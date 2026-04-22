@@ -1,15 +1,26 @@
 const nodemailer = require("nodemailer");
 
-function transporter() {
-  return nodemailer.createTransport({
-    host:   process.env.SMTP_HOST || "smtp.gmail.com",
-    port:   parseInt(process.env.SMTP_PORT || "587"),
-    secure: false,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-}
-
+const LOGO_HTML = '<span style="color:#0d9488;">Tym</span><span style="color:#ef4444;">4</span><span style="color:#0d9488;">DOC</span>';
 const FROM = () => `"Tym4DOC" <${process.env.SMTP_USER}>`;
+
+// Common extra headers to suppress Gmail auto-formatting (calendar cards, event icons)
+const HEADERS = {
+  "X-Entity-Ref-ID": "notspecified",
+  "X-Auto-Response-Suppress": "All",
+};
+
+let _transporter;
+function transporter() {
+  if (!_transporter) {
+    _transporter = nodemailer.createTransport({
+      host:   process.env.SMTP_HOST || "smtp.gmail.com",
+      port:   parseInt(process.env.SMTP_PORT || "587"),
+      secure: false,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  }
+  return _transporter;
+}
 
 // Format YYYY-MM-DD as "15 Apr 2026" to prevent Gmail from auto-rendering calendar icons
 function formatDate(d) {
@@ -23,31 +34,18 @@ function formatDate(d) {
   return `${parseInt(parts[2], 10)} ${month} ${parts[0]}`;
 }
 
-const LOGO_HTML = '<span style="color:#0d9488;">Tym</span><span style="color:#ef4444;">4</span><span style="color:#0d9488;">DOC</span>';
-
 function wrap(content) {
-  return `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;"><div style="background:#f1f5f9;padding:20px 28px;"><h2 style="color:#0f172a;margin:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:1px;">${LOGO_HTML}</h2></div><div style="padding:28px;color:#334155;">${content}</div><div style="background:#f8fafc;padding:14px 28px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;">© 2026 ${LOGO_HTML}. Automated email — do not reply.</div></div>`;
+  return `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;"><div style="background:#f1f5f9;padding:20px 28px;"><h2 style="color:#0f172a;margin:0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;letter-spacing:1px;">${LOGO_HTML}</h2></div><div style="padding:28px;color:#334155;">${content}</div><div style="background:#f8fafc;padding:16px;text-align:center;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">Tym4DOC. Automated email — do not reply.</div></div>`;
 }
-function row(l,v){ return v ? `<tr><td style="padding:7px 12px;color:#64748b;font-size:13px;">${l}</td><td style="padding:7px 12px;font-weight:600;font-size:13px;">${v}</td></tr>` : ""; }
-function tbl(...r){ return `<table style="width:100%;border-collapse:collapse;background:#f0fdfa;border-radius:8px;margin:16px 0;">${r.join("")}</table>`; }
-
-// Common extra headers to suppress Gmail auto-formatting (calendar cards, event icons)
-const HEADERS = {
-  "X-Entity-Ref-ID": "notspecified",
-  "X-Auto-Response-Suppress": "All",
-};
+function renderDataRow(l,v){ return v ? `<tr><td style="padding:7px 12px;color:#64748b;font-size:13px;">${l}</td><td style="padding:7px 12px;font-weight:600;font-size:13px;">${v}</td></tr>` : ""; }
+function renderTemplateTable(...r){ return `<table style="width:100%;border-collapse:collapse;background:#f0fdfa;border-radius:8px;margin:16px 0;">${r.join("")}</table>`; }
 
 exports.sendBookingConfirm = async (to, {patientName,doctorName,specialty,date,time}) => {
-  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Booked with ${doctorName}`,
+  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Confirmed with ${doctorName}`,
     headers: HEADERS,
-    html: wrap(`<h3 style="color:#0d9488;margin-top:0;">Appointment Booked</h3><p>Hi <strong>${patientName}</strong>, your request is awaiting doctor confirmation.</p>${tbl(row("Doctor",doctorName),row("Specialty",specialty),row("Date",formatDate(date)),row("Time",time),row("Status","Pending"))}<p style="font-size:13px;color:#64748b;">You will be notified when the doctor responds.</p>`) });
+    html: wrap(`<h3 style="color:#10b981;margin-top:0;">Appointment Confirmed</h3><p>Hi <strong>${patientName}</strong>, your appointment has been confirmed.</p>${renderTemplateTable(renderDataRow("Doctor",doctorName),renderDataRow("Specialty",specialty),renderDataRow("Date",formatDate(date)),renderDataRow("Time",time),renderDataRow("Status","Confirmed"))}<p style="font-size:13px;color:#64748b;">Please arrive 10 minutes early.</p>`) });
 };
 
-exports.sendApprovalNotice = async (to, {patientName,doctorName,specialty,date,time}) => {
-  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Confirmed`,
-    headers: HEADERS,
-    html: wrap(`<h3 style="color:#10b981;margin-top:0;">Appointment Confirmed</h3><p>Hi <strong>${patientName}</strong>, your appointment has been confirmed.</p>${tbl(row("Doctor",doctorName),row("Specialty",specialty),row("Date",formatDate(date)),row("Time",time),row("Status","Confirmed"))}<p style="font-size:13px;color:#64748b;">Please arrive 10 minutes early.</p>`) });
-};
 
 exports.sendCancellationNotice = async (to, {patientName,doctorName,date,time,rescheduleSuggest,refundInitiated}) => {
   const suggestDisplay = rescheduleSuggest
@@ -61,14 +59,27 @@ exports.sendCancellationNotice = async (to, {patientName,doctorName,date,time,re
 exports.sendRescheduleNotice = async (to, {patientName, doctorName, oldDate, oldTime, newDate, newTime}) => {
   await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Rescheduled`,
     headers: HEADERS,
-    html: wrap(`<h3 style="color:#0284c7;margin-top:0;">Appointment Rescheduled</h3><p>Hi <strong>${patientName}</strong>, your appointment has been rescheduled.</p>${tbl(row("Doctor",doctorName),row("Previous",`${formatDate(oldDate)} at ${oldTime}`),row("New Slot",`${formatDate(newDate)} at ${newTime}`),row("Status","Confirmed"))}<p style="font-size:13px;color:#64748b;">Please arrive 10 minutes before your new slot time.</p>`) });
+    html: wrap(`<h3 style="color:#0284c7;margin-top:0;">Appointment Rescheduled</h3><p>Hi <strong>${patientName}</strong>, your appointment has been rescheduled.</p>${renderTemplateTable(renderDataRow("Doctor",doctorName),renderDataRow("Previous",`${formatDate(oldDate)} at ${oldTime}`),renderDataRow("New Slot",`${formatDate(newDate)} at ${newTime}`),renderDataRow("Status","Confirmed"))}<p style="font-size:13px;color:#64748b;">Please arrive 10 minutes before your new slot time.</p>`) });
 };
 
-exports.sendNewRequestToDoctor = async (to, {doctorName,patientName,date,time,reason}) => {
-  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — New Appointment Request from ${patientName}`,
+exports.sendClinicBookingNotice = async (to, {clinicName, patientName, doctorName, specialty, date, time}) => {
+  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — New Appointment for ${doctorName}`,
     headers: HEADERS,
-    html: wrap(`<h3 style="color:#0d9488;margin-top:0;">New Request</h3><p>Hi <strong>Dr. ${doctorName}</strong>, you have a new appointment request.</p>${tbl(row("Patient",patientName),row("Date",formatDate(date)),row("Time",time),row("Reason",reason||"—"))}<p style="font-size:13px;color:#64748b;">Log in to approve or reject.</p>`) });
+    html: wrap(`<h3 style="color:#10b981;margin-top:0;">New Appointment Booked</h3><p>Hi <strong>${clinicName || 'Clinic Team'}</strong>, a new appointment has been booked.</p>${renderTemplateTable(renderDataRow("Patient",patientName),renderDataRow("Doctor",doctorName),renderDataRow("Specialty",specialty),renderDataRow("Date",formatDate(date)),renderDataRow("Time",time),renderDataRow("Status","Confirmed"))}<p style="font-size:13px;color:#64748b;">Please ensure the doctor is available.</p>`) });
 };
+
+exports.sendClinicCancellationNotice = async (to, {clinicName, patientName, doctorName, date, time, cancelledBy}) => {
+  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Cancelled`,
+    headers: HEADERS,
+    html: wrap(`<h3 style="color:#dc2626;margin-top:0;">Appointment Cancelled</h3><p>Hi <strong>${clinicName || 'Clinic Team'}</strong>, an appointment has been cancelled by the <strong>${cancelledBy || 'user'}</strong>.</p>${renderTemplateTable(renderDataRow("Patient",patientName),renderDataRow("Doctor",doctorName),renderDataRow("Date",formatDate(date)),renderDataRow("Time",time))}<p style="font-size:13px;color:#64748b;">This slot is now open for new bookings.</p>`) });
+};
+
+exports.sendClinicRescheduleNotice = async (to, {clinicName, patientName, doctorName, oldDate, oldTime, newDate, newTime}) => {
+  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Rescheduled`,
+    headers: HEADERS,
+    html: wrap(`<h3 style="color:#0284c7;margin-top:0;">Appointment Rescheduled</h3><p>Hi <strong>${clinicName || 'Clinic Team'}</strong>, an appointment has been rescheduled.</p>${renderTemplateTable(renderDataRow("Patient",patientName),renderDataRow("Doctor",doctorName),renderDataRow("Previous",`${formatDate(oldDate)} at ${oldTime}`),renderDataRow("New Slot",`${formatDate(newDate)} at ${newTime}`),renderDataRow("Status","Confirmed"))}<p style="font-size:13px;color:#64748b;">Please update your records accordingly.</p>`) });
+};
+
 
 exports.sendPasswordResetLink = async (to, token, role, name="User") => {
   const resetUrl = `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password?token=${token}&role=${role}`;
@@ -102,16 +113,10 @@ exports.sendVerificationEmailLink = async (to, token, role, name="User") => {
     `) });
 };
 
-exports.sendSubscriptionReceipt = async (to, {doctorName,plan,amount,validUntil}) => {
-  await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Subscription Activated`,
-    headers: HEADERS,
-    html: wrap(`<h3 style="color:#0d9488;margin-top:0;">Subscription Activated</h3><p>Hi <strong>Dr. ${doctorName}</strong>, your ${LOGO_HTML} subscription is active.</p>${tbl(row("Plan",plan),row("Amount Paid",`₹${amount}`),row("Valid Until",formatDate(validUntil)))}<p style="font-size:13px;color:#64748b;">Your profile is now visible to patients.</p>`) });
-};
-
 exports.sendAppointmentReminder = async (to, {patientName, doctorName, date, time, msg}) => {
   await transporter().sendMail({ from:FROM(), to, subject:`Tym4DOC — Appointment Reminder`,
     headers: HEADERS,
-    html: wrap(`<h3 style="color:#0d9488;margin-top:0;">Appointment Reminder</h3><p>${msg}</p>${tbl(row("Doctor",doctorName),row("Date",formatDate(date)),row("Time",time))}<p style="font-size:13px;color:#64748b;">You can manage your bookings from your dashboard.</p>`) });
+    html: wrap(`<h3 style="color:#0d9488;margin-top:0;">Appointment Reminder</h3><p>${msg}</p>${renderTemplateTable(renderDataRow("Doctor",doctorName),renderDataRow("Date",formatDate(date)),renderDataRow("Time",time))}<p style="font-size:13px;color:#64748b;">You can manage your bookings from your dashboard.</p>`) });
 };
 
 exports.sendSupportTicket = async ({ fromName, fromEmail, fromRole, subject, message, userId }) => {
@@ -125,12 +130,12 @@ exports.sendSupportTicket = async ({ fromName, fromEmail, fromRole, subject, mes
     html: wrap(`
       <h3 style="color:#0d9488;margin-top:0;">New Support Request</h3>
       <p>A new support ticket has been submitted from the <strong>${fromRole}</strong> dashboard.</p>
-      ${tbl(
-        row("From", fromName),
-        row("Email", fromEmail),
-        row("Role", fromRole),
-        row("User ID", userId),
-        row("Subject", subject)
+      ${renderTemplateTable(
+        renderDataRow("From", fromName),
+        renderDataRow("Email", fromEmail),
+        renderDataRow("Role", fromRole),
+        renderDataRow("User ID", userId),
+        renderDataRow("Subject", subject)
       )}
       <div style="background:#f1f5f9;padding:16px;border-radius:8px;margin-top:16px;white-space:pre-wrap;color:#0f172a;font-size:14px;border-left:4px solid #0d9488;">
         <strong>Message:</strong><br/>

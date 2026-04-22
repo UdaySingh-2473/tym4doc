@@ -7,11 +7,10 @@ import C from "../constants/colors";
 import useResponsive from "../hooks/useResponsive";
 import VerificationNotice from "./VerificationNotice";
 import { addDoctorClinic, getMyDoctorsClinic, deleteDoctorClinic, updateDoctorClinic, getSpecialties, rejectAppointment, completeAppointment, changePassword, updateClinicProfile, getMyProfile, sendAppointmentReminder } from "../services/api";
-import { SPECIALTIES, DEGREES } from "../constants/data";
 import { loadAppts } from "../utils/appointmentHelpers";
 import PhotoUpload from "../components/shared/PhotoUpload";
 import CalendarPicker from "../components/shared/CalendarPicker";
-import { Btn, Bdg } from "../components/shared/UI";
+import { Btn, Bdg, Inp } from "../components/shared/UI";
 import SupportModal, { SupportFAB } from "../components/shared/SupportModal";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { formatSlotRange } from "../utils/timeUtils";
@@ -838,8 +837,7 @@ export default function ClinicDash() {
                     </div>
 
                     <div>
-                      <label style={s.lbl}>Password {editingDoc ? "(Leave blank to keep same)" : "*"}</label>
-                      <input type="password" style={s.inp} value={docForm.password} onChange={handleDocChange("password")} placeholder={editingDoc ? "Keep same password" : "Min. 8 characters"} />
+                      <Inp label={`Password ${editingDoc ? "(Leave blank to keep same)" : "*"}`} type="password" value={docForm.password} onChange={handleDocChange("password")} placeholder={editingDoc ? "Keep same password" : "Min. 8 characters"} />
                     </div>
                   </div>
 
@@ -1346,17 +1344,14 @@ export default function ClinicDash() {
                 Change Password
               </h3>
               <div style={{ marginBottom: 14 }}>
-                <label style={s.lbl}>Current Password</label>
-                <input type="password" style={s.inp} value={chCurrent} onChange={e => setChCurrent(e.target.value)} placeholder="Your current password" />
+                <Inp label="Current Password" type="password" value={chCurrent} onChange={e => setChCurrent(e.target.value)} placeholder="Your current password" />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: R.isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 20 }}>
                 <div>
-                  <label style={s.lbl}>New Password</label>
-                  <input type="password" style={s.inp} value={chNew} onChange={e => setChNew(e.target.value)} placeholder="Min. 8 characters" />
+                  <Inp label="New Password" type="password" value={chNew} onChange={e => setChNew(e.target.value)} placeholder="Min. 8 characters" />
                 </div>
                 <div>
-                  <label style={s.lbl}>Confirm New Password</label>
-                  <input type="password" style={s.inp} value={chConfirm} onChange={e => setChConfirm(e.target.value)} placeholder="Repeat new password" />
+                  <Inp label="Confirm New Password" type="password" value={chConfirm} onChange={e => setChConfirm(e.target.value)} placeholder="Repeat new password" />
                 </div>
               </div>
               <Btn type="submit" full color="amber" disabled={chLoading}>

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ADMIN_EMAIL, ADMIN_PASS } from "../constants/data";
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || "mov30444@gmail.com";
+const ADMIN_PASS  = import.meta.env.VITE_ADMIN_PASS  || "admin1234";
 import { loadAppts } from "../utils/appointmentHelpers";
 import {
   patientRegister, patientLogin,
@@ -25,7 +26,7 @@ export function AuthProvider({ children, showToast, setClinics, setPending, setA
     return c ? JSON.parse(c) : null;
   });
 
-  const [adminModalOpen, setAdmMod]  = useState(false);
+  const [adminModalOpen, setAdminModalOpen]  = useState(false);
   const hasValidatedToken = useRef(false);
 
   // ── Sync appts/metadata on mount if session exists ─────────────────
@@ -91,7 +92,7 @@ export function AuthProvider({ children, showToast, setClinics, setPending, setA
     showToast("Your session has expired. Please sign in again.", true);
   }, [showToast, setAppts, navigate]);
 
-  const goHome = useCallback(() => {
+  const navigateToHome = useCallback(() => {
     const map = { patient: "/patient/dashboard", doctor: "/doctor/dashboard", clinic: "/clinic/dashboard", admin: "/admin/dashboard" };
     navigate(map[session.role] || "/");
   }, [session.role, navigate]);
@@ -108,7 +109,7 @@ export function AuthProvider({ children, showToast, setClinics, setPending, setA
     showToast("Signed out successfully.");
   }, [showToast, setAppts, navigate]);
 
-  const handlePatAuth = useCallback(async ({ type, email, pass, fname, lname, phone }) => {
+  const handlePatientAuthentication = useCallback(async ({ type, email, pass, fname, lname, phone }) => {
     if (type === "register") {
       if (!fname || !lname || !email || !pass) { showToast("Please fill all fields.", true); return; }
       if (pass.length < 8) { showToast("Password must be at least 8 characters.", true); return; }
@@ -159,7 +160,7 @@ export function AuthProvider({ children, showToast, setClinics, setPending, setA
     }
   }, [showToast, setAppts, navigate]);
 
-  const handleClinicAuth = useCallback(async (data) => {
+  const handleClinicAuthentication = useCallback(async (data) => {
     if (data.type === "clinicLogin") {
       const { email, pass } = data;
       if (!email) { showToast("Please enter your email.", true); return; }
@@ -228,7 +229,7 @@ export function AuthProvider({ children, showToast, setClinics, setPending, setA
       setClinics(clinicsArray.filter(c => c.status !== "pending"));
       loadAppts("admin", res.token, setAppts);
       
-      setAdmMod(false);
+      setAdminModalOpen(false);
       navigate("/admin/dashboard");
       showToast("Admin signed in.");
     } catch (err) {
@@ -260,8 +261,8 @@ export function AuthProvider({ children, showToast, setClinics, setPending, setA
 
   const value = {
     session, token, setToken, showToast,
-    loggedInClinic, setLogClinic, adminModalOpen, setAdmMod,
-    goHome, logout, handlePatAuth, handleClinicAuth, handleDoctorAuth, handleAdminSuccess,
+    loggedInClinic, setLogClinic, adminModalOpen, setAdminModalOpen,
+    navigateToHome, logout, handlePatientAuthentication, handleClinicAuthentication, handleDoctorAuth, handleAdminSuccess,
     refreshProfile,
   };
 
