@@ -12,8 +12,12 @@ export function Btn({
   children,
   disabled,
   style = {},
-  type = "button"
+  type = "button",
+  loading
 }) {
+  const [isHover, setIsHover] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+
   const colorMap = {
     blue: s.btnBlue,
     red: s.btnRed,
@@ -22,25 +26,40 @@ export function Btn({
     out: s.btnOut,
     gray: s.btnGray,
   };
+
   const combined = {
     ...s.btn,
     ...(colorMap[color] || s.btnBlue),
     ...(sm ? s.btnSm : {}),
     ...(full ? s.btnFull : {}),
     ...style,
+    transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)",
+    transform: isActive && !disabled ? "scale(0.96)" : isHover && !disabled ? "scale(1.02)" : "scale(1)",
+    filter: isActive && !disabled ? "brightness(0.9)" : isHover && !disabled ? "brightness(1.1)" : "none",
+    boxShadow: isHover && !disabled ? "0 4px 12px rgba(0,0,0,0.12)" : "none",
   };
+
   return (
     <button
       type={type}
+      onMouseEnter={() => setIsHover(true)}
+      onMouseLeave={() => { setIsHover(false); setIsActive(false); }}
+      onMouseDown={() => setIsActive(true)}
+      onMouseUp={() => setIsActive(false)}
       style={{
         ...combined,
-        opacity: disabled ? 0.6 : 1,
-        cursor: disabled ? "not-allowed" : "pointer"
+        opacity: (disabled || loading) ? 0.6 : 1,
+        cursor: (disabled || loading) ? "not-allowed" : "pointer"
       }}
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
+      onClick={(disabled || loading) ? undefined : onClick}
+      disabled={disabled || loading}
     >
-      {children}
+      {loading ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <div className="spinner-mini" style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: C.white, borderRadius: "50%", animation: "spin 0.6s linear infinite" }} />
+          <span>Please wait...</span>
+        </div>
+      ) : children}
     </button>
   );
 }

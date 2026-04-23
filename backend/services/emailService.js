@@ -141,7 +141,7 @@ exports.sendSupportTicket = async ({ fromName, fromEmail, fromRole, subject, mes
         <strong>Message:</strong><br/>
         ${message}
       </div>
-      <p style="font-size:13px;color:#64748b;margin-top:20px;">You can reply directly to this user by clicking "Reply" or emailing: <a href="mailto:${fromEmail}">${fromEmail}</a></p>
+      <p style="font-size:13px;color:#64748b;margin-top:20px;">You can reply directly to this user by clicking "Reply" or email: <a href="mailto:${fromEmail}">${fromEmail}</a></p>
     `)
   });
 };

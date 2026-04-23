@@ -92,17 +92,15 @@ export default function SupportModal({ isOpen, onClose, token }) {
               )}
 
               <div style={{ display: "flex", gap: 12 }}>
-                <button
+                <Btn
                   type="button"
                   onClick={onClose}
-                  style={{
-                    flex: 1, padding: "12px", borderRadius: 8, border: "none",
-                    background: C.red, fontWeight: 700, cursor: "pointer", fontSize: ".9rem", color: C.white
-                  }}
+                  color="red"
+                  style={{ flex: 1, height: 46 }}
                   disabled={loading}
                 >
                   Cancel
-                </button>
+                </Btn>
                 <Btn
                   loading={loading}
                   style={{ flex: 1, height: 46 }}
@@ -121,11 +119,14 @@ export default function SupportModal({ isOpen, onClose, token }) {
 
 export function SupportFAB({ onClick }) {
   const [hover, setHover] = useState(false);
+  const [active, setActive] = useState(false);
   
   return (
     <button
       onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseLeave={() => { setHover(false); setActive(false); }}
+      onMouseDown={() => setActive(true)}
+      onMouseUp={() => setActive(false)}
       onClick={onClick}
       style={{
         position: "fixed", bottom: 24, right: 24, zIndex: 10000,
@@ -133,8 +134,8 @@ export function SupportFAB({ onClick }) {
         background: "#0d9488", color: C.white, border: "none",
         cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
         boxShadow: hover ? "0 10px 24px rgba(13, 148, 136, 0.4)" : "0 6px 12px rgba(0, 0, 0, 0.15)",
-        transition: "all .3s cubic-bezier(0.4, 0, 0.2, 1)",
-        transform: hover ? "scale(1.05) translateY(-2px)" : "scale(1)",
+        transition: "all .2s cubic-bezier(0.4, 0, 0.2, 1)",
+        transform: active ? "scale(0.95)" : hover ? "scale(1.05) translateY(-2px)" : "scale(1)",
         fontWeight: 700,
         fontSize: ".75rem",
         letterSpacing: ".03em",
