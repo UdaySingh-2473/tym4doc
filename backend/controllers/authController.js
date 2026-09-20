@@ -1304,62 +1304,6 @@ exports.getAdminPatients = async (req, res) => {
     });
   }
 };
-Now change emailService.js
 
-Replace the whole file with your existing file plus the timeout change. Since your original file is very large and you already have all the email templates/functions, don't replace the whole email service with a shortened version.
-
-Instead, find this exact section:
-
-_transporter = nodemailer.createTransport({
-  host:   process.env.SMTP_HOST || "smtp.gmail.com",
-  port:   parseInt(process.env.SMTP_PORT || "587"),
-  secure: false,
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-});
-
-Replace it with:
-
-_transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false,
-
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  },
-
-  // Prevent Render from waiting indefinitely for SMTP
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000
-});
-Then push to GitHub
-
-Run:
-
-git add .
-git commit -m "Fix SMTP registration timeout"
-git push origin main
-
-Render should automatically deploy the new backend.
-
-After deployment
-
-Test Patient Register again.
-
-There are two possible results:
-
-A. Registration works and email arrives
-
-Great — SMTP is working.
-
-B. Registration works but email doesn't arrive
-
-That's okay for this test. The account is being created, and Render logs should now show something like:
-
-Patient verification email failed: ...
-
-That error will tell us exactly what is wrong with SMTP.
 
 Important: don't send me your SMTP_PASS, Gmail password, Razorpay secret, JWT secret, or MongoDB password. If Render shows an SMTP error, send me only the error message.
