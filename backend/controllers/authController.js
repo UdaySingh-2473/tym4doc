@@ -1,4 +1,3 @@
-```js
 const bcrypt        = require("bcryptjs");
 const crypto        = require("crypto");
 const Patient       = require("../models/Patient");
@@ -801,5 +800,566 @@ exports.changePassword = async (req, res) => {
           : Patient;
 
     const user = await Model.findById(
-      req.user._id_
-```
+      req.user._id
+    ).select("+password");
+
+    if (!user) {
+      return res.status(404).json({
+        error: "User not found"
+      });
+    }
+
+    if (
+      !(await user.matchPassword(currentPassword))
+    ) {
+      return res.status(401).json({
+        error: "Current password is incorrect"
+      });
+    }
+
+    user.password = newPassword;
+
+    await user.save();
+
+    return res.json({
+      message:
+        "Password changed successfully"
+    });
+
+  } catch (err) {
+    console.error(
+      "Change password ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
+
+// ============================================================
+// UPDATE PATIENT PROFILE
+// ============================================================
+
+exports.updatePatientProfile = async (req, res) => {
+  try {
+    const {
+      firstName,
+      lastName,
+      phone
+    } = req.body;
+
+    const updates = {};
+
+    if (firstName) {
+      updates.firstName = firstName;
+    }
+
+    if (lastName) {
+      updates.lastName = lastName;
+    }
+
+    if (phone) {
+      if (!/^\d{10}$/.test(phone)) {
+        return res.status(400).json({
+          error: "Phone must be 10 digits"
+        });
+      }
+
+      updates.phone = phone;
+    }
+
+    const { email } = req.body;
+
+    if (
+      email &&
+      email.toLowerCase() !== req.user.email
+    ) {
+
+      const normalizedEmail =
+        email.toLowerCase().trim();
+
+      if (
+        await Patient.findOne({
+          email: normalizedEmail
+        })
+      ) {
+        return res.status(400).json({
+          error: "Email already in use"
+        });
+      }
+
+      updates.email = normalizedEmail;
+      updates.isEmailVerified = false;
+
+      try {
+        await exports.issueVerificationToken(
+          normalizedEmail,
+          "patient",
+          `${req.user.firstName} ${req.user.lastName}`
+        );
+      } catch (emailErr) {
+        console.error(
+          "Patient profile verification email failed:",
+          emailErr.message
+        );
+      }
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        error: "No fields to update"
+      });
+    }
+
+    const patient =
+      await Patient.findByIdAndUpdate(
+        req.user._id,
+        updates,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+
+    if (!patient) {
+      return res.status(404).json({
+        error: "Patient not found"
+      });
+    }
+
+    return res.json({
+      message:
+        email &&
+        email.toLowerCase() !== req.user.email
+          ? "Profile updated. Please verify your new email."
+          : "Profile updated successfully",
+
+      user: {
+        id: patient._id,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        email: patient.email,
+        phone: patient.phone,
+        isEmailVerified:
+          patient.isEmailVerified
+      }
+    });
+
+  } catch (err) {
+    console.error(
+      "Update patient profile ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
+
+// ============================================================
+// UPDATE CLINIC PROFILE
+// ============================================================
+
+exports.updateClinicProfile = async (req, res) => {
+  try {
+    const {
+      name,
+      phone,
+      address,
+      city,
+      state,
+      description,
+      location,
+      maxBookingDays
+    } = req.body;
+
+    const updates = {};
+
+    if (name) {
+      updates.name = name;
+    }
+
+    if (phone) {
+      if (!/^\d{10}$/.test(phone)) {
+        return res.status(400).json({
+          error: "Phone must be 10 digits"
+        });
+      }
+
+      updates.phone = phone;
+    }
+
+    const { email } = req.body;
+
+    if (
+      email &&
+      email.toLowerCase() !== req.user.email
+    ) {
+
+      const normalizedEmail =
+        email.toLowerCase().trim();
+
+      if (
+        await Clinic.findOne({
+          email: normalizedEmail
+        })
+      ) {
+        return res.status(400).json({
+          error: "Email already in use"
+        });
+      }
+
+      updates.email = normalizedEmail;
+      updates.isEmailVerified = false;
+
+      try {
+        await exports.issueVerificationToken(
+          normalizedEmail,
+          "clinic",
+          req.user.name
+        );
+      } catch (emailErr) {
+        console.error(
+          "Clinic profile verification email failed:",
+          emailErr.message
+        );
+      }
+    }
+
+    if (address) {
+      updates.address = address;
+    }
+
+    if (city) {
+      updates.city = city;
+    }
+
+    if (state) {
+      updates.state = state;
+    }
+
+    if (description !== undefined) {
+      updates.description = description;
+    }
+
+    if (location) {
+      updates.location = location;
+    }
+
+    if (maxBookingDays !== undefined) {
+
+      if (Number(maxBookingDays) < 1) {
+        return res.status(400).json({
+          error:
+            "Maximum Booking Days must be at least 1"
+        });
+      }
+
+      updates.maxBookingDays =
+        Number(maxBookingDays);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        error: "No fields to update"
+      });
+    }
+
+    const clinic =
+      await Clinic.findByIdAndUpdate(
+        req.user._id,
+        updates,
+        {
+          new: true,
+          runValidators: true
+        }
+      );
+
+    if (!clinic) {
+      return res.status(404).json({
+        error: "Clinic not found"
+      });
+    }
+
+    return res.json({
+      message:
+        "Profile updated successfully",
+
+      user: {
+        id: clinic._id,
+        name: clinic.name,
+        email: clinic.email,
+        phone: clinic.phone,
+        address: clinic.address,
+        city: clinic.city,
+        state: clinic.state,
+        description: clinic.description,
+        role: "clinic",
+        status: clinic.status
+      }
+    });
+
+  } catch (err) {
+    console.error(
+      "Update clinic profile ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
+
+// ============================================================
+// GET PATIENT PROFILE
+// ============================================================
+
+exports.getPatientProfile = async (req, res) => {
+  try {
+
+    const patient =
+      await Patient.findById(
+        req.user._id
+      );
+
+    if (!patient) {
+      return res.status(404).json({
+        error: "Patient not found"
+      });
+    }
+
+    return res.json({
+      id: patient._id,
+      firstName: patient.firstName,
+      lastName: patient.lastName,
+      email: patient.email,
+      phone: patient.phone,
+      isEmailVerified:
+        patient.isEmailVerified
+    });
+
+  } catch (err) {
+
+    console.error(
+      "Get patient profile ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
+
+// ============================================================
+// GET CLINIC PROFILE
+// ============================================================
+
+exports.getClinicProfile = async (req, res) => {
+  try {
+
+    const clinic =
+      await Clinic.findById(
+        req.user._id
+      );
+
+    if (!clinic) {
+      return res.status(404).json({
+        error: "Clinic not found"
+      });
+    }
+
+    return res.json({
+      id: clinic._id,
+      name: clinic.name,
+      email: clinic.email,
+      phone: clinic.phone,
+      address: clinic.address,
+      city: clinic.city,
+      state: clinic.state,
+      description: clinic.description,
+      status: clinic.status,
+      maxBookingDays:
+        clinic.maxBookingDays,
+      isEmailVerified:
+        clinic.isEmailVerified
+    });
+
+  } catch (err) {
+
+    console.error(
+      "Get clinic profile ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
+
+// ============================================================
+// GET DOCTOR PROFILE
+// ============================================================
+
+exports.getDoctorProfile = async (req, res) => {
+  try {
+
+    const doctor =
+      await Doctor.findById(
+        req.user._id
+      ).populate(
+        "clinicId",
+        "name city address"
+      );
+
+    if (!doctor) {
+      return res.status(404).json({
+        error: "Doctor not found"
+      });
+    }
+
+    return res.json(doctor);
+
+  } catch (err) {
+
+    console.error(
+      "Get doctor profile ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
+
+// ============================================================
+// ADMIN: GET ALL PATIENTS
+// ============================================================
+
+exports.getAdminPatients = async (req, res) => {
+  try {
+
+    const Appointment =
+      require("../models/Appointment");
+
+    const patients =
+      await Patient.find({})
+        .select("-password")
+        .lean();
+
+    const enhanced =
+      await Promise.all(
+        patients.map(
+          async (p) => {
+
+            if (p.phone) {
+              return {
+                ...p,
+                lastUsedPhone: p.phone
+              };
+            }
+
+            const lastAppt =
+              await Appointment.findOne({
+                patientId: p._id
+              })
+              .sort({
+                createdAt: -1
+              });
+
+            return {
+              ...p,
+              lastUsedPhone:
+                lastAppt
+                  ? lastAppt.patientPhone
+                  : null
+            };
+          }
+        )
+      );
+
+    return res.json(enhanced);
+
+  } catch (err) {
+
+    console.error(
+      "Get admin patients ERROR:",
+      err
+    );
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+Now change emailService.js
+
+Replace the whole file with your existing file plus the timeout change. Since your original file is very large and you already have all the email templates/functions, don't replace the whole email service with a shortened version.
+
+Instead, find this exact section:
+
+_transporter = nodemailer.createTransport({
+  host:   process.env.SMTP_HOST || "smtp.gmail.com",
+  port:   parseInt(process.env.SMTP_PORT || "587"),
+  secure: false,
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+});
+
+Replace it with:
+
+_transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: parseInt(process.env.SMTP_PORT || "587"),
+  secure: false,
+
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+
+  // Prevent Render from waiting indefinitely for SMTP
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000
+});
+Then push to GitHub
+
+Run:
+
+git add .
+git commit -m "Fix SMTP registration timeout"
+git push origin main
+
+Render should automatically deploy the new backend.
+
+After deployment
+
+Test Patient Register again.
+
+There are two possible results:
+
+A. Registration works and email arrives
+
+Great — SMTP is working.
+
+B. Registration works but email doesn't arrive
+
+That's okay for this test. The account is being created, and Render logs should now show something like:
+
+Patient verification email failed: ...
+
+That error will tell us exactly what is wrong with SMTP.
+
+Important: don't send me your SMTP_PASS, Gmail password, Razorpay secret, JWT secret, or MongoDB password. If Render shows an SMTP error, send me only the error message.
