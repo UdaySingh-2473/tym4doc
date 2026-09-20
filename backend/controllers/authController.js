@@ -1306,4 +1306,3 @@ exports.getAdminPatients = async (req, res) => {
 };
 
 
-Important: don't send me your SMTP_PASS, Gmail password, Razorpay secret, JWT secret, or MongoDB password. If Render shows an SMTP error, send me only the error message.
