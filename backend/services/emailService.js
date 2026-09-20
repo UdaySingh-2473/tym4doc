@@ -26,19 +26,20 @@ let _transporter = null;
 function transporter() {
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT || "587", 10),
+      host: "smtp.gmail.com",
+      port: 587,
       secure: false,
+
+      family: 4,
 
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
 
-      // Prevent Render from hanging indefinitely
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
+      connectionTimeout: 15000,
+      greetingTimeout: 15000,
+      socketTimeout: 15000,
     });
   }
 
