@@ -27,10 +27,8 @@ function transporter() {
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 587,
-      secure: false,
-
-      family: 4,
+      port: 465,
+      secure: true,
 
       auth: {
         user: process.env.SMTP_USER,
@@ -45,7 +43,6 @@ function transporter() {
 
   return _transporter;
 }
-
 // ============================================================
 // FORMAT DATE
 // ============================================================
