@@ -30,6 +30,9 @@ function transporter() {
       port: 465,
       secure: true,
 
+      // Force IPv4
+      family: 4,
+
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
