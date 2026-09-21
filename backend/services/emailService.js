@@ -27,10 +27,8 @@ function transporter() {
   if (!_transporter) {
     _transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
-      port: 465,
-      secure: true,
-
-      // Force IPv4
+      port: 587,
+      secure: false,
       family: 4,
 
       auth: {
